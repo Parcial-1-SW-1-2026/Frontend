@@ -1,18 +1,23 @@
 import { useRef } from "react";
 import { UI } from "@/config/constants";
 import { useJitsi } from "@/features/supervision";
+import type { JitsiCallbacks } from "./types";
 
 type JitsiRoomProps = {
   sessionId: string;
   displayName?: string;
+  jwt?: string;
+  callbacks?: JitsiCallbacks;
 };
 
-export default function JitsiRoom({ sessionId, displayName }: JitsiRoomProps) {
+export default function JitsiRoom({ sessionId, displayName, jwt, callbacks }: JitsiRoomProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { isLoading, hasError } = useJitsi({
+  const { isLoading, hasError, kickParticipant, muteEveryone, hangup, toggleLobby } = useJitsi({
     roomName: sessionId,
     displayName,
+    jwt,
     containerRef,
+    callbacks,
   });
 
   if (hasError) {

@@ -1,73 +1,51 @@
-# React + TypeScript + Vite
+# Jitsi — Setup local
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Setup inicial
 
-Currently, two official plugins are available:
+```bash
+# 1. Clonar el repo oficial dentro de tu proyecto
+git clone https://github.com/jitsi/docker-jitsi-meet.git jitsi
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+# 2. Entrar a la carpeta y copiar el archivo de ejemplo
+cd jitsi
+cp env.example .env
 
-## React Compiler
+# 3. Generar contraseñas automáticas (las mete en el .env)
+bash gen-passwords.sh
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# 4. Levantar los contenedores
+docker compose up -d
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Configuración del .env de Jitsi
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Luego de generar el `.env`, cambiar estos parámetros:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+| Variable      | Valor                    |
+| ------------- | ------------------------ |
+| `PUBLIC_URL`  | `https://localhost:8443` |
+| `ENABLE_AUTH` | `0`                      |
+
+También cambiar en el `.env` del frontend:
+
+| Variable            | Valor            |
+| ------------------- | ---------------- |
+| `VITE_JITSI_DOMAIN` | `localhost:8443` |
+
+## Recrear contenedores
+
+Cada vez que cambies el `.env` de Jitsi, un simple restart no alcanza. Hay que borrar la config generada:
+
+```bash
+docker compose down
+rm -rf ~/.jitsi-meet-cfg
+docker compose up -d
 ```
+
+## Primer uso en el navegador (Chrome)
+
+Jitsi usa HTTPS con certificado auto-firmado. Hay que aceptarlo una vez por cada recreación:
+
+1. Ir a **`https://localhost:8443`** en Chrome
+2. Click en **"Configuración avanzada"** → **"Acceder a localhost (sitio no seguro)"**
+3. Volver a la app en `http://localhost:5173`
