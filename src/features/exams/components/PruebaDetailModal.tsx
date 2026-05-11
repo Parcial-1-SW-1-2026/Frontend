@@ -1,0 +1,191 @@
+import { Badge, Button } from "@/shared/components/ui";
+import { PRUEBAS } from "@/config/constants";
+import type { Prueba } from "../types";
+
+type PruebaDetailModalProps = {
+  prueba: Prueba;
+  onClose: () => void;
+};
+
+type BadgeVariant = "success" | "warning" | "danger" | "info" | "neutral";
+
+const metaLabelStyle: React.CSSProperties = {
+  fontSize: "var(--font-size-sm)",
+  color: "var(--color-text-muted)",
+  marginBottom: "var(--space-xs)",
+};
+
+const metaValueStyle: React.CSSProperties = {
+  fontSize: "var(--font-size-base)",
+  color: "var(--color-text)",
+  fontWeight: "var(--font-weight-medium)",
+};
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("es-PE", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+export default function PruebaDetailModal({ prueba, onClose }: PruebaDetailModalProps) {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 50,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "var(--space-xl)",
+      }}
+    >
+      <div
+        style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.6)" }}
+        onClick={onClose}
+      />
+      <div
+        style={{
+          position: "relative",
+          zIndex: 1,
+          backgroundColor: "var(--color-surface)",
+          border: "1px solid var(--color-border)",
+          borderRadius: "var(--radius-lg)",
+          padding: "var(--space-xl)",
+          width: "100%",
+          maxWidth: "600px",
+          maxHeight: "90vh",
+          overflowY: "auto",
+          boxShadow: "var(--shadow-lg)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "var(--space-lg)",
+        }}
+      >
+        {/* Encabezado */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: "var(--space-md)",
+          }}
+        >
+          <div>
+            <p style={{ ...metaLabelStyle, marginBottom: "var(--space-xs)" }}>
+              {PRUEBAS.MODAL_DETALLE_TITLE}
+            </p>
+            <h2
+              style={{
+                fontSize: "var(--font-size-xl)",
+                fontWeight: "var(--font-weight-bold)",
+                color: "var(--color-text)",
+              }}
+            >
+              {prueba.titulo}
+            </h2>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              background: "none",
+              border: "none",
+              color: "var(--color-text-muted)",
+              fontSize: "var(--font-size-xl)",
+              cursor: "pointer",
+              lineHeight: 1,
+              padding: "var(--space-xs)",
+              flexShrink: 0,
+            }}
+            aria-label="Cerrar"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Badges: tipo y estado */}
+        <div style={{ display: "flex", gap: "var(--space-sm)", flexWrap: "wrap" }}>
+          <Badge variant={PRUEBAS.TIPO_BADGE[prueba.tipo] as BadgeVariant}>
+            {PRUEBAS.TIPO_LABELS[prueba.tipo]}
+          </Badge>
+          <Badge variant={prueba.activa ? "success" : "danger"}>
+            {prueba.activa ? PRUEBAS.ACTIVA : PRUEBAS.INACTIVA}
+          </Badge>
+        </div>
+
+        {/* Métricas: duración, puntaje, fecha */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: "var(--space-md)",
+            backgroundColor: "var(--color-background)",
+            borderRadius: "var(--radius-md)",
+            padding: "var(--space-md)",
+          }}
+        >
+          <div>
+            <p style={metaLabelStyle}>{PRUEBAS.COL_DURACION}</p>
+            <p style={metaValueStyle}>
+              {prueba.duracionMinutos} {PRUEBAS.DETAIL_MINUTOS}
+            </p>
+          </div>
+          <div>
+            <p style={metaLabelStyle}>{PRUEBAS.COL_PUNTAJE}</p>
+            <p style={metaValueStyle}>
+              {prueba.puntajeMaximo} {PRUEBAS.DETAIL_PUNTOS}
+            </p>
+          </div>
+          <div>
+            <p style={metaLabelStyle}>Creada</p>
+            <p style={metaValueStyle}>{formatDate(prueba.creadaEn)}</p>
+          </div>
+        </div>
+
+        {/* Descripción */}
+        <div>
+          <p style={metaLabelStyle}>{PRUEBAS.LABEL_DESCRIPCION}</p>
+          <p
+            style={{
+              fontSize: "var(--font-size-base)",
+              color: "var(--color-text)",
+              lineHeight: 1.6,
+            }}
+          >
+            {prueba.descripcion}
+          </p>
+        </div>
+
+        {/* Contenido */}
+        <div>
+          <p style={metaLabelStyle}>{PRUEBAS.LABEL_CONTENIDO}</p>
+          <div
+            style={{
+              backgroundColor: "var(--color-background)",
+              borderRadius: "var(--radius-md)",
+              padding: "var(--space-md)",
+              maxHeight: "220px",
+              overflowY: "auto",
+              fontSize: "var(--font-size-sm)",
+              color: "var(--color-text)",
+              whiteSpace: "pre-wrap",
+              lineHeight: 1.6,
+              border: "1px solid var(--color-border)",
+            }}
+          >
+            {prueba.contenido}
+          </div>
+        </div>
+
+        {/* Pie */}
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <Button variant="secondary" onClick={onClose}>
+            {PRUEBAS.BTN_CERRAR}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -7,7 +7,7 @@ export default function SessionPage() {
   const navigate = useNavigate();
 
   const handleLeave = () => {
-    navigate({ to: "/" });
+    navigate({ to: "/supervision" });
   };
 
   return (
