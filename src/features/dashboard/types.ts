@@ -1,3 +1,19 @@
+export type DashboardResumen = {
+  totalUsuarios: number;
+  totalPruebas: number;
+  totalEntrevistas: number;
+  sesionesActivas: number;
+  sesionesHoy: number;
+};
+
+export type ActividadReciente = {
+  id: string;
+  tipo: string;
+  descripcion: string;
+  fecha: string;
+  usuario: string;
+};
+
 export type RiskLevel = "low" | "medium" | "high";
 
 export type AIEvent = {

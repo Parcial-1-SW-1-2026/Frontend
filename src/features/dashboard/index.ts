@@ -1,1 +1,1 @@
-export type { Report, AIEvent, RiskLevel } from "./types";
+export { useDashboardStats } from "./hooks/useDashboard";
