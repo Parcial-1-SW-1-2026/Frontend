@@ -1,19 +1,13 @@
-export interface ApiResponse<T> {
-  data: T;
-  message: string;
-  success: boolean;
-}
-
 export interface PaginatedResponse<T> {
-  data: T[];
-  total: number;
-  page: number;
-  pageSize: number;
-  totalPages: number;
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
 }
 
 export interface ApiError {
-  message: string;
-  statusCode: number;
+  message?: string;
+  detail?: string;
+  statusCode?: number;
   errors?: Record<string, string[]>;
 }

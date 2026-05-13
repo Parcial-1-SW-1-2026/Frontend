@@ -1,41 +1,44 @@
 import { api } from "@/shared/lib/axios";
-import type { ApiResponse } from "@/shared/types/api";
+import type { PaginatedResponse } from "@/shared/types/api";
 import type {
   Entrevista,
-  EntrevistaConPruebas,
-  EntrevistaPrueba,
+  PruebaEntrevista,
   CreateEntrevistaDto,
   UpdateEntrevistaDto,
   AsignarPruebaDto,
-  ReordenarPruebasDto,
 } from "../types";
 
 export const entrevistasService = {
-  getEntrevistas: (): Promise<Entrevista[]> =>
-    api.get<ApiResponse<Entrevista[]>>("/entrevistas").then((r) => r.data.data),
+  getEntrevistas: (page = 1): Promise<Entrevista[]> =>
+    api
+      .get<PaginatedResponse<Entrevista>>("/entrevistas/entrevistas/", { params: { page } })
+      .then((r) => r.data.results),
 
-  getEntrevistaById: (id: string): Promise<EntrevistaConPruebas> =>
-    api.get<ApiResponse<EntrevistaConPruebas>>(`/entrevistas/${id}`).then((r) => r.data.data),
+  getEntrevistaById: (id: number): Promise<Entrevista> =>
+    api.get<Entrevista>(`/entrevistas/entrevistas/${id}/`).then((r) => r.data),
 
   createEntrevista: (dto: CreateEntrevistaDto): Promise<Entrevista> =>
-    api.post<ApiResponse<Entrevista>>("/entrevistas", dto).then((r) => r.data.data),
+    api.post<Entrevista>("/entrevistas/entrevistas/", dto).then((r) => r.data),
 
-  updateEntrevista: (id: string, dto: UpdateEntrevistaDto): Promise<Entrevista> =>
-    api.put<ApiResponse<Entrevista>>(`/entrevistas/${id}`, dto).then((r) => r.data.data),
+  updateEntrevista: (id: number, dto: UpdateEntrevistaDto): Promise<Entrevista> =>
+    api.put<Entrevista>(`/entrevistas/entrevistas/${id}/`, dto).then((r) => r.data),
 
-  deleteEntrevista: (id: string): Promise<void> =>
-    api.delete(`/entrevistas/${id}`).then(() => undefined),
+  patchEntrevista: (id: number, dto: UpdateEntrevistaDto): Promise<Entrevista> =>
+    api.patch<Entrevista>(`/entrevistas/entrevistas/${id}/`, dto).then((r) => r.data),
 
-  asignarPrueba: (entrevistaId: string, dto: AsignarPruebaDto): Promise<EntrevistaPrueba> =>
+  deleteEntrevista: (id: number): Promise<void> =>
+    api.delete(`/entrevistas/entrevistas/${id}/`).then(() => undefined),
+
+  getPruebasEntrevista: (entrevistaId: number): Promise<PruebaEntrevista[]> =>
     api
-      .post<ApiResponse<EntrevistaPrueba>>(`/entrevistas/${entrevistaId}/pruebas`, dto)
-      .then((r) => r.data.data),
+      .get<PaginatedResponse<PruebaEntrevista>>("/pruebas/pruebas-entrevista/", {
+        params: { entrevista: entrevistaId },
+      })
+      .then((r) => r.data.results),
 
-  removerPrueba: (entrevistaId: string, pruebaId: string): Promise<void> =>
-    api.delete(`/entrevistas/${entrevistaId}/pruebas/${pruebaId}`).then(() => undefined),
+  asignarPrueba: (dto: AsignarPruebaDto): Promise<PruebaEntrevista> =>
+    api.post<PruebaEntrevista>("/pruebas/pruebas-entrevista/", dto).then((r) => r.data),
 
-  reordenarPruebas: (entrevistaId: string, dto: ReordenarPruebasDto): Promise<EntrevistaConPruebas> =>
-    api
-      .put<ApiResponse<EntrevistaConPruebas>>(`/entrevistas/${entrevistaId}/pruebas/orden`, dto)
-      .then((r) => r.data.data),
+  removerAsignacion: (pruebaEntrevistaId: number): Promise<void> =>
+    api.delete(`/pruebas/pruebas-entrevista/${pruebaEntrevistaId}/`).then(() => undefined),
 };

@@ -1,42 +1,33 @@
-export type ExamStatus = "pending" | "in_progress" | "processing" | "completed";
-
-export type Exam = {
-  id: string;
-  title: string;
-  description: string;
-  duration: number;
-  status: ExamStatus;
-  createdAt: string;
-};
-
-// ── Pruebas ────────────────────────────────────────────────────────────────
-
-export type TipoPrueba =
-  | "cuestionario_teorico"
-  | "caso_practico"
-  | "ejercicio_codigo"
-  | "prueba_psicologica";
+export type TipoPrueba = "teorica" | "tecnica" | "mixta";
+export type AreaPrueba = "programacion" | "negocio" | "juridica";
+export type NivelPrueba = "basico" | "intermedio" | "avanzado";
+export type EstadoPrueba = "borrador" | "activa" | "inactiva" | "archivada";
 
 export type Prueba = {
-  id: string;
-  usuarioId: string;
+  id: number;
   titulo: string;
-  tipo: TipoPrueba;
   descripcion: string;
-  contenido: string;
-  puntajeMaximo: number;
-  duracionMinutos: number;
-  activa: boolean;
-  creadaEn: string;
+  creada_por: number;
+  tipo: TipoPrueba;
+  area: AreaPrueba;
+  nivel: NivelPrueba;
+  duracion_minutos: number;
+  puntaje_maximo: number;
+  estado: EstadoPrueba;
+  fecha_creacion: string;
+  fecha_actualizacion: string;
 };
 
 export type CreatePruebaDto = {
   titulo: string;
-  tipo: TipoPrueba;
   descripcion: string;
-  contenido: string;
-  puntajeMaximo: number;
-  duracionMinutos: number;
+  creada_por: number;
+  tipo: TipoPrueba;
+  area: AreaPrueba;
+  nivel: NivelPrueba;
+  duracion_minutos: number;
+  puntaje_maximo: number;
+  estado?: EstadoPrueba;
 };
 
-export type UpdatePruebaDto = Partial<CreatePruebaDto>;
+export type UpdatePruebaDto = Partial<Omit<CreatePruebaDto, "creada_por">>;

@@ -3,19 +3,28 @@ import { entrevistasService } from "../services/entrevistasService";
 import type { AsignarPruebaDto, CreateEntrevistaDto, UpdateEntrevistaDto } from "../types";
 
 const BASE_KEY = ["entrevistas"] as const;
+const ASIGNACIONES_KEY = ["pruebas-entrevista"] as const;
 
-export function useGetEntrevistas() {
+export function useGetEntrevistas(page = 1) {
   return useQuery({
-    queryKey: BASE_KEY,
-    queryFn: entrevistasService.getEntrevistas,
+    queryKey: [...BASE_KEY, page] as const,
+    queryFn: () => entrevistasService.getEntrevistas(page),
   });
 }
 
-export function useGetEntrevistaById(id: string) {
+export function useGetEntrevistaById(id: number) {
   return useQuery({
     queryKey: [...BASE_KEY, id] as const,
     queryFn: () => entrevistasService.getEntrevistaById(id),
     enabled: Boolean(id),
+  });
+}
+
+export function useGetPruebasEntrevista(entrevistaId: number) {
+  return useQuery({
+    queryKey: [...ASIGNACIONES_KEY, entrevistaId] as const,
+    queryFn: () => entrevistasService.getPruebasEntrevista(entrevistaId),
+    enabled: Boolean(entrevistaId),
   });
 }
 
@@ -29,7 +38,7 @@ export function useCreateEntrevista() {
   });
 }
 
-type UpdateVars = { id: string; dto: UpdateEntrevistaDto };
+type UpdateVars = { id: number; dto: UpdateEntrevistaDto };
 
 export function useUpdateEntrevista() {
   const queryClient = useQueryClient();
@@ -44,37 +53,34 @@ export function useUpdateEntrevista() {
 export function useDeleteEntrevista() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => entrevistasService.deleteEntrevista(id),
+    mutationFn: (id: number) => entrevistasService.deleteEntrevista(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: BASE_KEY });
     },
   });
 }
 
-type AsignarVars = { entrevistaId: string; dto: AsignarPruebaDto };
-
 export function useAsignarPrueba() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ entrevistaId, dto }: AsignarVars) =>
-      entrevistasService.asignarPrueba(entrevistaId, dto),
-    onSuccess: (_, { entrevistaId }) => {
-      queryClient.invalidateQueries({ queryKey: [...BASE_KEY, entrevistaId] });
-      queryClient.invalidateQueries({ queryKey: BASE_KEY });
+    mutationFn: (dto: AsignarPruebaDto) => entrevistasService.asignarPrueba(dto),
+    onSuccess: (_, dto) => {
+      queryClient.invalidateQueries({
+        queryKey: [...ASIGNACIONES_KEY, dto.entrevista],
+      });
     },
   });
 }
 
-type RemoverVars = { entrevistaId: string; pruebaId: string };
-
-export function useRemoverPrueba() {
+export function useRemoverAsignacion() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ entrevistaId, pruebaId }: RemoverVars) =>
-      entrevistasService.removerPrueba(entrevistaId, pruebaId),
+    mutationFn: ({ id, entrevistaId: _entrevistaId }: { id: number; entrevistaId: number }) =>
+      entrevistasService.removerAsignacion(id),
     onSuccess: (_, { entrevistaId }) => {
-      queryClient.invalidateQueries({ queryKey: [...BASE_KEY, entrevistaId] });
-      queryClient.invalidateQueries({ queryKey: BASE_KEY });
+      queryClient.invalidateQueries({
+        queryKey: [...ASIGNACIONES_KEY, entrevistaId],
+      });
     },
   });
 }

@@ -1,16 +1,12 @@
+export type Rol = "admin" | "reclutador" | "entrevistador" | "evaluador";
+export type EstadoUsuario = "activo" | "inactivo";
+
 export type User = {
-  id: string;
-  email: string;
-  name: string;
-  role: "admin" | "teacher" | "student";
+  id: number;
+  username: string;
 };
 
 export type LoginRequest = {
-  email: string;
+  username: string;
   password: string;
-};
-
-export type AuthResponse = {
-  user: User;
-  accessToken: string;
 };

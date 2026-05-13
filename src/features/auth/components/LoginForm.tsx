@@ -4,17 +4,17 @@ import { UI } from "@/config/constants";
 import { useLogin } from "../hooks/useLogin";
 
 export default function LoginForm() {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const { mutate, isPending, isError, error } = useLogin();
 
   const errorMessage = isError
-    ? (error?.response?.data?.message ?? UI.LOGIN_ERROR_DEFAULT)
+    ? ((error?.response?.data?.detail ?? error?.response?.data?.message) || UI.LOGIN_ERROR_DEFAULT)
     : undefined;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    mutate({ email, password });
+    mutate({ username, password });
   };
 
   return (
@@ -23,13 +23,13 @@ export default function LoginForm() {
       style={{ display: "flex", flexDirection: "column", gap: "var(--space-md)" }}
     >
       <Input
-        label={UI.LOGIN_EMAIL_LABEL}
-        type="email"
-        name="email"
-        placeholder={UI.LOGIN_EMAIL_PLACEHOLDER}
-        value={email}
-        autoComplete="email"
-        onChange={(e) => setEmail(e.target.value)}
+        label={UI.LOGIN_USERNAME_LABEL}
+        type="text"
+        name="username"
+        placeholder={UI.LOGIN_USERNAME_PLACEHOLDER}
+        value={username}
+        autoComplete="username"
+        onChange={(e) => setUsername(e.target.value)}
       />
       <Input
         label={UI.LOGIN_PASSWORD_LABEL}

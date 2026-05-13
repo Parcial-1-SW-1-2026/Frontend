@@ -50,9 +50,10 @@ export default function PruebasPage() {
     setDetailPrueba(undefined);
   };
 
+  const displayName = user?.username;
+
   return (
-    <MainLayout userName={user?.name} onLogout={logout}>
-      {/* Encabezado */}
+    <MainLayout userName={displayName} onLogout={logout}>
       <div
         style={{
           display: "flex",
@@ -74,7 +75,6 @@ export default function PruebasPage() {
         </h1>
 
         <div style={{ display: "flex", gap: "var(--space-sm)", alignItems: "center" }}>
-          {/* Filtro por tipo */}
           <select
             value={tipoFilter ?? "all"}
             onChange={(e) => {
@@ -98,11 +98,7 @@ export default function PruebasPage() {
         </div>
       </div>
 
-      <PruebasTable
-        tipoFilter={tipoFilter}
-        onView={handleView}
-        onEdit={handleEdit}
-      />
+      <PruebasTable tipoFilter={tipoFilter} onView={handleView} onEdit={handleEdit} />
 
       {isFormModalOpen && (
         <PruebaModal onClose={handleCloseForm} prueba={editPrueba} />

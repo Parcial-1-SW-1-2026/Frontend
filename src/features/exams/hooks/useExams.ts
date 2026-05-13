@@ -4,14 +4,14 @@ import type { CreatePruebaDto, UpdatePruebaDto } from "../types";
 
 const BASE_KEY = ["pruebas"] as const;
 
-export function useGetPruebas() {
+export function useGetPruebas(page = 1) {
   return useQuery({
-    queryKey: BASE_KEY,
-    queryFn: examsService.getPruebas,
+    queryKey: [...BASE_KEY, page] as const,
+    queryFn: () => examsService.getPruebas(page),
   });
 }
 
-export function useGetPruebaById(id: string) {
+export function useGetPruebaById(id: number) {
   return useQuery({
     queryKey: [...BASE_KEY, id] as const,
     queryFn: () => examsService.getPruebaById(id),
@@ -29,7 +29,7 @@ export function useCreatePrueba() {
   });
 }
 
-type UpdateVars = { id: string; dto: UpdatePruebaDto };
+type UpdateVars = { id: number; dto: UpdatePruebaDto };
 
 export function useUpdatePrueba() {
   const queryClient = useQueryClient();
@@ -44,17 +44,7 @@ export function useUpdatePrueba() {
 export function useDeletePrueba() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => examsService.deletePrueba(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: BASE_KEY });
-    },
-  });
-}
-
-export function useToggleActiva() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => examsService.toggleActiva(id),
+    mutationFn: (id: number) => examsService.deletePrueba(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: BASE_KEY });
     },

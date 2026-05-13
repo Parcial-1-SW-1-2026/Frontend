@@ -1,6 +1,1 @@
-export type AuthUser = {
-  id: string;
-  email: string;
-  name: string;
-  role: "admin" | "teacher" | "student";
-};
+export type { User as AuthUser } from "@/features/auth/types";

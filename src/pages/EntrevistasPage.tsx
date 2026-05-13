@@ -7,7 +7,7 @@ import {
   EntrevistaModal,
   EntrevistaDetailDrawer,
 } from "@/features/interviews";
-import type { AreaEntrevista, Entrevista } from "@/features/interviews";
+import type { Entrevista, EstadoEntrevista } from "@/features/interviews";
 import { UI, ENTREVISTAS } from "@/config/constants";
 
 const filterSelectStyle: React.CSSProperties = {
@@ -26,7 +26,7 @@ export default function EntrevistasPage() {
   const { data: user } = useCurrentUser();
   const logout = useLogout();
 
-  const [areaFilter, setAreaFilter] = useState<AreaEntrevista | null>(null);
+  const [estadoFilter, setEstadoFilter] = useState<EstadoEntrevista | null>(null);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editEntrevista, setEditEntrevista] = useState<Entrevista | undefined>(undefined);
   const [detailEntrevista, setDetailEntrevista] = useState<Entrevista | undefined>(undefined);
@@ -54,9 +54,10 @@ export default function EntrevistasPage() {
     setDetailEntrevista(undefined);
   };
 
+  const displayName = user?.username;
+
   return (
-    <MainLayout userName={user?.name} onLogout={logout}>
-      {/* Encabezado */}
+    <MainLayout userName={displayName} onLogout={logout}>
       <div
         style={{
           display: "flex",
@@ -78,20 +79,19 @@ export default function EntrevistasPage() {
         </h1>
 
         <div style={{ display: "flex", gap: "var(--space-sm)", alignItems: "center" }}>
-          {/* Filtro por área */}
           <select
-            value={areaFilter ?? "all"}
+            value={estadoFilter ?? "all"}
             onChange={(e) => {
               const val = e.target.value;
-              setAreaFilter(val === "all" ? null : (val as AreaEntrevista));
+              setEstadoFilter(val === "all" ? null : (val as EstadoEntrevista));
             }}
             style={filterSelectStyle}
-            aria-label="Filtrar por área"
+            aria-label="Filtrar por estado"
           >
             <option value="all">{ENTREVISTAS.FILTER_TODAS}</option>
-            {ENTREVISTAS.AREAS.map((area) => (
-              <option key={area} value={area}>
-                {ENTREVISTAS.AREA_LABELS[area]}
+            {ENTREVISTAS.ESTADOS.map((estado) => (
+              <option key={estado} value={estado}>
+                {ENTREVISTAS.ESTADO_LABELS[estado]}
               </option>
             ))}
           </select>
@@ -102,11 +102,7 @@ export default function EntrevistasPage() {
         </div>
       </div>
 
-      <EntrevistasTable
-        areaFilter={areaFilter}
-        onView={handleView}
-        onEdit={handleEdit}
-      />
+      <EntrevistasTable estadoFilter={estadoFilter} onView={handleView} onEdit={handleEdit} />
 
       {isFormModalOpen && (
         <EntrevistaModal onClose={handleCloseForm} entrevista={editEntrevista} />

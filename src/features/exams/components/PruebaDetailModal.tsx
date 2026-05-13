@@ -1,6 +1,7 @@
+import { createPortal } from "react-dom";
 import { Badge, Button } from "@/shared/components/ui";
 import { PRUEBAS } from "@/config/constants";
-import type { Prueba } from "../types";
+import type { AreaPrueba, EstadoPrueba, Prueba, TipoPrueba } from "../types";
 
 type PruebaDetailModalProps = {
   prueba: Prueba;
@@ -30,7 +31,7 @@ function formatDate(iso: string): string {
 }
 
 export default function PruebaDetailModal({ prueba, onClose }: PruebaDetailModalProps) {
-  return (
+  return createPortal(
     <div
       style={{
         position: "fixed",
@@ -105,17 +106,23 @@ export default function PruebaDetailModal({ prueba, onClose }: PruebaDetailModal
           </button>
         </div>
 
-        {/* Badges: tipo y estado */}
+        {/* Badges: tipo, área, nivel, estado */}
         <div style={{ display: "flex", gap: "var(--space-sm)", flexWrap: "wrap" }}>
-          <Badge variant={PRUEBAS.TIPO_BADGE[prueba.tipo] as BadgeVariant}>
-            {PRUEBAS.TIPO_LABELS[prueba.tipo]}
+          <Badge variant={PRUEBAS.TIPO_BADGE[prueba.tipo as TipoPrueba] as BadgeVariant}>
+            {PRUEBAS.TIPO_LABELS[prueba.tipo as TipoPrueba]}
           </Badge>
-          <Badge variant={prueba.activa ? "success" : "danger"}>
-            {prueba.activa ? PRUEBAS.ACTIVA : PRUEBAS.INACTIVA}
+          <Badge variant={PRUEBAS.AREA_BADGE[prueba.area as AreaPrueba] as BadgeVariant}>
+            {PRUEBAS.AREA_LABELS[prueba.area as AreaPrueba]}
+          </Badge>
+          <Badge variant="neutral">
+            {PRUEBAS.NIVEL_LABELS[prueba.nivel]}
+          </Badge>
+          <Badge variant={PRUEBAS.ESTADO_BADGE[prueba.estado as EstadoPrueba] as BadgeVariant}>
+            {PRUEBAS.ESTADO_LABELS[prueba.estado as EstadoPrueba]}
           </Badge>
         </div>
 
-        {/* Métricas: duración, puntaje, fecha */}
+        {/* Métricas */}
         <div
           style={{
             display: "grid",
@@ -129,18 +136,18 @@ export default function PruebaDetailModal({ prueba, onClose }: PruebaDetailModal
           <div>
             <p style={metaLabelStyle}>{PRUEBAS.COL_DURACION}</p>
             <p style={metaValueStyle}>
-              {prueba.duracionMinutos} {PRUEBAS.DETAIL_MINUTOS}
+              {prueba.duracion_minutos} {PRUEBAS.DETAIL_MINUTOS}
             </p>
           </div>
           <div>
             <p style={metaLabelStyle}>{PRUEBAS.COL_PUNTAJE}</p>
             <p style={metaValueStyle}>
-              {prueba.puntajeMaximo} {PRUEBAS.DETAIL_PUNTOS}
+              {prueba.puntaje_maximo} {PRUEBAS.DETAIL_PUNTOS}
             </p>
           </div>
           <div>
             <p style={metaLabelStyle}>Creada</p>
-            <p style={metaValueStyle}>{formatDate(prueba.creadaEn)}</p>
+            <p style={metaValueStyle}>{formatDate(prueba.fecha_creacion)}</p>
           </div>
         </div>
 
@@ -158,34 +165,13 @@ export default function PruebaDetailModal({ prueba, onClose }: PruebaDetailModal
           </p>
         </div>
 
-        {/* Contenido */}
-        <div>
-          <p style={metaLabelStyle}>{PRUEBAS.LABEL_CONTENIDO}</p>
-          <div
-            style={{
-              backgroundColor: "var(--color-background)",
-              borderRadius: "var(--radius-md)",
-              padding: "var(--space-md)",
-              maxHeight: "220px",
-              overflowY: "auto",
-              fontSize: "var(--font-size-sm)",
-              color: "var(--color-text)",
-              whiteSpace: "pre-wrap",
-              lineHeight: 1.6,
-              border: "1px solid var(--color-border)",
-            }}
-          >
-            {prueba.contenido}
-          </div>
-        </div>
-
-        {/* Pie */}
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
           <Button variant="secondary" onClick={onClose}>
             {PRUEBAS.BTN_CERRAR}
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

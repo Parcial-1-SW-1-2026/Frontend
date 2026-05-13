@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { UI } from "@/config/constants";
 
 type NavItem = {
   label: string;
@@ -7,11 +8,11 @@ type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "Dashboard", to: "/dashboard", icon: "" },
-  { label: "Supervisión", to: "/supervision", icon: "" },
-  { label: "Usuarios", to: "/usuarios", icon: "" },
-  { label: "Pruebas", to: "/pruebas", icon: "" },
-  { label: "Entrevistas", to: "/entrevistas", icon: "" },
+  { label: UI.NAV_DASHBOARD, to: "/dashboard", icon: "" },
+  { label: UI.NAV_SUPERVISION, to: "/supervision", icon: "" },
+  { label: UI.NAV_USUARIOS, to: "/usuarios", icon: "" },
+  { label: UI.NAV_PRUEBAS, to: "/pruebas", icon: "" },
+  { label: UI.NAV_ENTREVISTAS, to: "/entrevistas", icon: "" },
 ];
 
 type MainLayoutProps = {

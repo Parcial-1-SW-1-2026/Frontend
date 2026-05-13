@@ -1,16 +1,13 @@
 import { Badge, Button, Spinner } from "@/shared/components/ui";
 import { USUARIOS } from "@/config/constants";
-import { useGetUsuarios, useDeleteUsuario, useToggleActivo } from "../hooks/useUsuarios";
-import type { Usuario } from "../types";
+import { useGetUsuarios, useDeleteUsuario } from "../hooks/useUsuarios";
+import type { EstadoUsuario, Rol, Usuario } from "../types";
 
 type UsuariosTableProps = {
   onEdit: (usuario: Usuario) => void;
 };
 
-const ROL_BADGE_VARIANT = {
-  administrador: "info",
-  evaluador: "neutral",
-} as const;
+type BadgeVariant = "success" | "warning" | "danger" | "info" | "neutral";
 
 const thStyle: React.CSSProperties = {
   padding: "var(--space-sm) var(--space-md)",
@@ -33,7 +30,6 @@ const tdStyle: React.CSSProperties = {
 export default function UsuariosTable({ onEdit }: UsuariosTableProps) {
   const { data: usuarios, isLoading, isError } = useGetUsuarios();
   const deleteUsuario = useDeleteUsuario();
-  const toggleActivo = useToggleActivo();
 
   if (isLoading) {
     return (
@@ -79,11 +75,7 @@ export default function UsuariosTable({ onEdit }: UsuariosTableProps) {
     }
   };
 
-  const handleToggle = (usuario: Usuario) => {
-    toggleActivo.mutate(usuario.id);
-  };
-
-  const isMutating = deleteUsuario.isPending || toggleActivo.isPending;
+  const isMutating = deleteUsuario.isPending;
 
   return (
     <div style={{ overflowX: "auto" }}>
@@ -105,13 +97,13 @@ export default function UsuariosTable({ onEdit }: UsuariosTableProps) {
               </td>
               <td style={{ ...tdStyle, color: "var(--color-text-muted)" }}>{usuario.email}</td>
               <td style={tdStyle}>
-                <Badge variant={ROL_BADGE_VARIANT[usuario.rol]}>
-                  {USUARIOS.ROL_LABELS[usuario.rol]}
+                <Badge variant={USUARIOS.ROL_BADGE[usuario.rol as Rol] as BadgeVariant}>
+                  {USUARIOS.ROL_LABELS[usuario.rol as Rol]}
                 </Badge>
               </td>
               <td style={tdStyle}>
-                <Badge variant={usuario.activo ? "success" : "danger"}>
-                  {usuario.activo ? USUARIOS.ACTIVO : USUARIOS.INACTIVO}
+                <Badge variant={USUARIOS.ESTADO_BADGE[usuario.estado as EstadoUsuario] as BadgeVariant}>
+                  {USUARIOS.ESTADO_LABELS[usuario.estado as EstadoUsuario]}
                 </Badge>
               </td>
               <td style={{ ...tdStyle, textAlign: "right" }}>
@@ -129,14 +121,6 @@ export default function UsuariosTable({ onEdit }: UsuariosTableProps) {
                     onClick={() => onEdit(usuario)}
                   >
                     {USUARIOS.BTN_EDITAR}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    disabled={isMutating}
-                    onClick={() => handleToggle(usuario)}
-                  >
-                    {usuario.activo ? USUARIOS.BTN_DESACTIVAR : USUARIOS.BTN_ACTIVAR}
                   </Button>
                   <Button
                     variant="danger"

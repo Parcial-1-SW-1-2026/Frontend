@@ -1,185 +1,257 @@
-import { Link } from "@tanstack/react-router";
+import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { MainLayout } from "@/shared/components/layout";
+import { Spinner } from "@/shared/components/ui";
 import { useCurrentUser, useLogout } from "@/features/auth";
-import { MetricCard, ActividadList, useGetResumen, useGetActividad } from "@/features/dashboard";
-import { DASHBOARD, UI } from "@/config/constants";
+import { useDashboardStats } from "@/features/dashboard";
 
-function IconUsers() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="9" cy="7" r="4" />
-      <path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-      <path d="M21 21v-2a4 4 0 0 0-3-3.85" />
-    </svg>
-  );
-}
-
-function IconDocument() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="4" y="2" width="16" height="20" rx="2" />
-      <line x1="8" y1="7" x2="16" y2="7" />
-      <line x1="8" y1="11" x2="16" y2="11" />
-      <line x1="8" y1="15" x2="13" y2="15" />
-    </svg>
-  );
-}
-
-function IconChat() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-    </svg>
-  );
-}
-
-function IconActivity() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-    </svg>
-  );
-}
-
-const quickLinkStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: "var(--space-sm)",
-  padding: "var(--space-sm) var(--space-md)",
-  borderRadius: "var(--radius-md)",
-  fontSize: "var(--font-size-sm)",
-  textDecoration: "none",
-  border: "1px solid var(--color-border)",
-  color: "var(--color-text)",
-  backgroundColor: "var(--color-background)",
-  transition: "background-color 0.15s",
+type StatCardProps = {
+  icon: string;
+  value: number;
+  label: string;
+  isLoading: boolean;
+  accentColor: string;
 };
+
+function StatCard({ icon, value, label, isLoading, accentColor }: StatCardProps) {
+  return (
+    <div
+      style={{
+        backgroundColor: "var(--color-surface)",
+        border: "1px solid var(--color-border)",
+        borderTop: `3px solid ${accentColor}`,
+        borderRadius: "var(--radius-lg)",
+        padding: "var(--space-xl)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--space-sm)",
+      }}
+    >
+      <span style={{ fontSize: "var(--font-size-xl)", lineHeight: 1 }}>{icon}</span>
+      <div style={{ minHeight: "3rem", display: "flex", alignItems: "center" }}>
+        {isLoading ? (
+          <Spinner size="md" />
+        ) : (
+          <span
+            style={{
+              fontSize: "var(--font-size-3xl)",
+              fontWeight: "var(--font-weight-bold)",
+              color: "var(--color-text)",
+              lineHeight: 1,
+            }}
+          >
+            {value}
+          </span>
+        )}
+      </div>
+      <span style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-muted)" }}>
+        {label}
+      </span>
+    </div>
+  );
+}
+
+const NAV_ITEMS = [
+  {
+    id: "usuarios",
+    icon: "👥",
+    title: "Usuarios",
+    description: "Gestiona cuentas, roles y accesos del equipo",
+    to: "/usuarios" as const,
+  },
+  {
+    id: "pruebas",
+    icon: "📋",
+    title: "Pruebas",
+    description: "Crea y administra evaluaciones técnicas y teóricas",
+    to: "/pruebas" as const,
+  },
+  {
+    id: "entrevistas",
+    icon: "🗓️",
+    title: "Entrevistas",
+    description: "Programa sesiones y asigna pruebas a candidatos",
+    to: "/entrevistas" as const,
+  },
+] as const;
 
 export default function DashboardPage() {
   const { data: user } = useCurrentUser();
   const logout = useLogout();
-  const { data: resumen, isLoading: loadingResumen } = useGetResumen();
-  const {
-    data: actividad,
-    isLoading: loadingActividad,
-    isError: errorActividad,
-  } = useGetActividad();
+  const navigate = useNavigate();
+  const stats = useDashboardStats();
+  const [hoveredNav, setHoveredNav] = useState<string | null>(null);
+
+  const displayName = user?.username ?? "…";
 
   return (
-    <MainLayout userName={user?.name} onLogout={logout}>
-      {/* Saludo */}
-      <div style={{ marginBottom: "var(--space-xl)" }}>
-        <h1
-          style={{
-            fontSize: "var(--font-size-2xl)",
-            fontWeight: "var(--font-weight-bold)",
-            color: "var(--color-text)",
-            marginBottom: "var(--space-xs)",
-          }}
-        >
-          {DASHBOARD.GREETING},{" "}
-          <span style={{ color: "var(--color-primary)" }}>{user?.name ?? "…"}</span>
-        </h1>
-        <p style={{ fontSize: "var(--font-size-base)", color: "var(--color-text-muted)" }}>
-          {DASHBOARD.GREETING_SUBTITLE}
-        </p>
-      </div>
-
-      {/* Grid de métricas */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-          gap: "var(--space-lg)",
-          marginBottom: "var(--space-xl)",
-        }}
-      >
-        <MetricCard
-          label={DASHBOARD.METRIC_USUARIOS}
-          value={resumen?.totalUsuarios ?? 0}
-          variant="primary"
-          icon={<IconUsers />}
-          isLoading={loadingResumen}
-        />
-        <MetricCard
-          label={DASHBOARD.METRIC_PRUEBAS}
-          value={resumen?.totalPruebas ?? 0}
-          variant="info"
-          icon={<IconDocument />}
-          isLoading={loadingResumen}
-        />
-        <MetricCard
-          label={DASHBOARD.METRIC_ENTREVISTAS}
-          value={resumen?.totalEntrevistas ?? 0}
-          variant="warning"
-          icon={<IconChat />}
-          isLoading={loadingResumen}
-        />
-        <MetricCard
-          label={DASHBOARD.METRIC_SESIONES_HOY}
-          value={resumen?.sesionesHoy ?? 0}
-          subtitle={
-            resumen
-              ? `${resumen.sesionesActivas} ${DASHBOARD.METRIC_SESIONES_ACTIVAS_AHORA}`
-              : undefined
-          }
-          variant="success"
-          icon={<IconActivity />}
-          isLoading={loadingResumen}
-        />
-      </div>
-
-      {/* Actividad + Accesos rápidos */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 240px",
-          gap: "var(--space-lg)",
-          alignItems: "start",
-        }}
-      >
-        <ActividadList
-          actividad={actividad}
-          isLoading={loadingActividad}
-          isError={errorActividad}
-        />
-
-        {/* Accesos rápidos */}
+    <MainLayout userName={displayName} onLogout={logout}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2xl)" }}>
+        {/* Saludo */}
         <div
           style={{
             backgroundColor: "var(--color-surface)",
             border: "1px solid var(--color-border)",
+            borderLeft: "4px solid var(--color-primary)",
             borderRadius: "var(--radius-lg)",
-            padding: "var(--space-lg)",
-            boxShadow: "var(--shadow-sm)",
+            padding: "var(--space-xl)",
           }}
         >
-          <h2
+          <p
             style={{
-              fontSize: "var(--font-size-base)",
-              fontWeight: "var(--font-weight-bold)",
-              color: "var(--color-text)",
-              marginBottom: "var(--space-md)",
+              fontSize: "var(--font-size-sm)",
+              color: "var(--color-text-muted)",
+              marginBottom: "var(--space-xs)",
             }}
           >
-            {DASHBOARD.ACCESOS_TITLE}
-          </h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-sm)" }}>
-            <Link to="/usuarios" style={quickLinkStyle}>
-              <IconUsers />
-              {DASHBOARD.ACCESO_USUARIOS}
-            </Link>
-            <Link to="/pruebas" style={quickLinkStyle}>
-              <IconDocument />
-              {DASHBOARD.ACCESO_PRUEBAS}
-            </Link>
-            <Link to="/entrevistas" style={quickLinkStyle}>
-              <IconChat />
-              {DASHBOARD.ACCESO_ENTREVISTAS}
-            </Link>
-          </div>
+            Panel de administración
+          </p>
+          <h1
+            style={{
+              fontSize: "var(--font-size-2xl)",
+              fontWeight: "var(--font-weight-bold)",
+              color: "var(--color-text)",
+            }}
+          >
+            Bienvenido,{" "}
+            <span style={{ color: "var(--color-primary)" }}>{displayName}</span>
+          </h1>
         </div>
+
+        {/* Métricas */}
+        <section>
+          <h2
+            style={{
+              fontSize: "var(--font-size-lg)",
+              fontWeight: "var(--font-weight-bold)",
+              color: "var(--color-text)",
+              marginBottom: "var(--space-lg)",
+            }}
+          >
+            Resumen del sistema
+          </h2>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gap: "var(--space-lg)",
+            }}
+          >
+            <StatCard
+              icon="👥"
+              value={stats.totalUsuarios}
+              label="Usuarios registrados"
+              isLoading={stats.isLoading}
+              accentColor="var(--color-primary)"
+            />
+            <StatCard
+              icon="📋"
+              value={stats.totalPruebas}
+              label="Pruebas disponibles"
+              isLoading={stats.isLoading}
+              accentColor="var(--color-success)"
+            />
+            <StatCard
+              icon="🗓️"
+              value={stats.totalEntrevistas}
+              label="Entrevistas creadas"
+              isLoading={stats.isLoading}
+              accentColor="#f59e0b"
+            />
+          </div>
+        </section>
+
+        {/* Accesos rápidos */}
+        <section>
+          <h2
+            style={{
+              fontSize: "var(--font-size-lg)",
+              fontWeight: "var(--font-weight-bold)",
+              color: "var(--color-text)",
+              marginBottom: "var(--space-lg)",
+            }}
+          >
+            Accesos rápidos
+          </h2>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gap: "var(--space-lg)",
+            }}
+          >
+            {NAV_ITEMS.map((item) => {
+              const isHovered = hoveredNav === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => navigate({ to: item.to })}
+                  onMouseEnter={() => setHoveredNav(item.id)}
+                  onMouseLeave={() => setHoveredNav(null)}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "var(--space-lg)",
+                    backgroundColor: isHovered
+                      ? "var(--color-surface-hover)"
+                      : "var(--color-surface)",
+                    border: `1px solid ${isHovered ? "var(--color-primary)" : "var(--color-border)"}`,
+                    borderRadius: "var(--radius-lg)",
+                    padding: "var(--space-xl)",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    fontFamily: "inherit",
+                    color: "inherit",
+                    width: "100%",
+                    boxSizing: "border-box",
+                    transition:
+                      "background-color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast)",
+                    boxShadow: isHovered ? "var(--shadow-md)" : "none",
+                  }}
+                >
+                  <span style={{ fontSize: "2.25rem", lineHeight: 1 }}>{item.icon}</span>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-xs)" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "var(--font-size-lg)",
+                          fontWeight: "var(--font-weight-bold)",
+                          color: "var(--color-text)",
+                        }}
+                      >
+                        {item.title}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: "var(--font-size-lg)",
+                          color: isHovered ? "var(--color-primary)" : "var(--color-text-muted)",
+                          transition: "color var(--transition-fast)",
+                        }}
+                      >
+                        →
+                      </span>
+                    </div>
+                    <p
+                      style={{
+                        fontSize: "var(--font-size-sm)",
+                        color: "var(--color-text-muted)",
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      {item.description}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
       </div>
     </MainLayout>
   );

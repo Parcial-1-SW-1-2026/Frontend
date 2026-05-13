@@ -1,8 +1,18 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { Button, Input } from "@/shared/components/ui";
 import { PRUEBAS } from "@/config/constants";
+import { useCurrentUser } from "@/features/auth";
 import { useCreatePrueba, useUpdatePrueba } from "../hooks/useExams";
-import type { CreatePruebaDto, Prueba, TipoPrueba, UpdatePruebaDto } from "../types";
+import type {
+  AreaPrueba,
+  CreatePruebaDto,
+  EstadoPrueba,
+  NivelPrueba,
+  Prueba,
+  TipoPrueba,
+  UpdatePruebaDto,
+} from "../types";
 
 type PruebaModalProps = {
   onClose: () => void;
@@ -12,10 +22,12 @@ type PruebaModalProps = {
 type FormState = {
   titulo: string;
   tipo: TipoPrueba;
+  area: AreaPrueba;
+  nivel: NivelPrueba;
   descripcion: string;
-  contenido: string;
-  puntajeMaximo: string;
-  duracionMinutos: string;
+  puntaje_maximo: string;
+  duracion_minutos: string;
+  estado: EstadoPrueba;
 };
 
 type FormErrors = Partial<Record<keyof FormState, string>>;
@@ -24,20 +36,19 @@ function validateForm(state: FormState): FormErrors {
   const errors: FormErrors = {};
   if (!state.titulo.trim()) errors.titulo = PRUEBAS.VALIDATION_REQUIRED;
   if (!state.descripcion.trim()) errors.descripcion = PRUEBAS.VALIDATION_REQUIRED;
-  if (!state.contenido.trim()) errors.contenido = PRUEBAS.VALIDATION_REQUIRED;
 
-  const puntaje = Number(state.puntajeMaximo);
-  if (!state.puntajeMaximo) {
-    errors.puntajeMaximo = PRUEBAS.VALIDATION_REQUIRED;
+  const puntaje = Number(state.puntaje_maximo);
+  if (!state.puntaje_maximo) {
+    errors.puntaje_maximo = PRUEBAS.VALIDATION_REQUIRED;
   } else if (isNaN(puntaje) || puntaje <= 0) {
-    errors.puntajeMaximo = PRUEBAS.VALIDATION_POSITIVE;
+    errors.puntaje_maximo = PRUEBAS.VALIDATION_POSITIVE;
   }
 
-  const duracion = Number(state.duracionMinutos);
-  if (!state.duracionMinutos) {
-    errors.duracionMinutos = PRUEBAS.VALIDATION_REQUIRED;
+  const duracion = Number(state.duracion_minutos);
+  if (!state.duracion_minutos) {
+    errors.duracion_minutos = PRUEBAS.VALIDATION_REQUIRED;
   } else if (isNaN(duracion) || duracion <= 0) {
-    errors.duracionMinutos = PRUEBAS.VALIDATION_POSITIVE;
+    errors.duracion_minutos = PRUEBAS.VALIDATION_POSITIVE;
   }
 
   return errors;
@@ -55,22 +66,34 @@ const labelStyle: React.CSSProperties = {
   color: "var(--color-text-muted)",
 };
 
-function fieldBorder(hasError: boolean) {
-  return hasError ? "var(--color-danger)" : "var(--color-border)";
-}
+const selectStyle: React.CSSProperties = {
+  backgroundColor: "var(--color-surface)",
+  color: "var(--color-text)",
+  border: "1px solid var(--color-border)",
+  borderRadius: "var(--radius-md)",
+  padding: "var(--space-sm) var(--space-md)",
+  fontSize: "var(--font-size-base)",
+  fontFamily: "inherit",
+  width: "100%",
+  outline: "none",
+  cursor: "pointer",
+};
 
 export default function PruebaModal({ onClose, prueba }: PruebaModalProps) {
   const isEdit = Boolean(prueba);
+  const { data: currentUser } = useCurrentUser();
   const createPrueba = useCreatePrueba();
   const updatePrueba = useUpdatePrueba();
 
   const [form, setForm] = useState<FormState>({
     titulo: prueba?.titulo ?? "",
-    tipo: prueba?.tipo ?? "cuestionario_teorico",
+    tipo: prueba?.tipo ?? "teorica",
+    area: prueba?.area ?? "programacion",
+    nivel: prueba?.nivel ?? "basico",
     descripcion: prueba?.descripcion ?? "",
-    contenido: prueba?.contenido ?? "",
-    puntajeMaximo: prueba?.puntajeMaximo?.toString() ?? "",
-    duracionMinutos: prueba?.duracionMinutos?.toString() ?? "",
+    puntaje_maximo: prueba?.puntaje_maximo?.toString() ?? "",
+    duracion_minutos: prueba?.duracion_minutos?.toString() ?? "",
+    estado: prueba?.estado ?? "borrador",
   });
   const [formErrors, setFormErrors] = useState<FormErrors>({});
 
@@ -81,7 +104,7 @@ export default function PruebaModal({ onClose, prueba }: PruebaModalProps) {
     setFormErrors((prev) => ({ ...prev, [field]: undefined }));
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const errors = validateForm(form);
     if (Object.keys(errors).length > 0) {
@@ -92,22 +115,24 @@ export default function PruebaModal({ onClose, prueba }: PruebaModalProps) {
     const base = {
       titulo: form.titulo,
       tipo: form.tipo,
+      area: form.area,
+      nivel: form.nivel,
       descripcion: form.descripcion,
-      contenido: form.contenido,
-      puntajeMaximo: Number(form.puntajeMaximo),
-      duracionMinutos: Number(form.duracionMinutos),
+      puntaje_maximo: Number(form.puntaje_maximo),
+      duracion_minutos: Number(form.duracion_minutos),
+      estado: form.estado,
     };
 
     if (isEdit && prueba) {
       const dto: UpdatePruebaDto = base;
       updatePrueba.mutate({ id: prueba.id, dto }, { onSuccess: onClose });
     } else {
-      const dto: CreatePruebaDto = base;
+      const dto: CreatePruebaDto = { ...base, creada_por: currentUser!.id };
       createPrueba.mutate(dto, { onSuccess: onClose });
     }
   };
 
-  return (
+  return createPortal(
     <div
       style={{
         position: "fixed",
@@ -138,7 +163,6 @@ export default function PruebaModal({ onClose, prueba }: PruebaModalProps) {
           boxShadow: "var(--shadow-lg)",
         }}
       >
-        {/* Encabezado */}
         <div
           style={{
             display: "flex",
@@ -186,34 +210,82 @@ export default function PruebaModal({ onClose, prueba }: PruebaModalProps) {
             onChange={(e) => handleChange("titulo", e.target.value)}
           />
 
-          {/* Selector de tipo */}
-          <div style={fieldStyle}>
-            <label htmlFor="tipo" style={labelStyle}>
-              {PRUEBAS.LABEL_TIPO}
-            </label>
-            <select
-              id="tipo"
-              value={form.tipo}
-              onChange={(e) => handleChange("tipo", e.target.value as TipoPrueba)}
-              style={{
-                backgroundColor: "var(--color-surface)",
-                color: "var(--color-text)",
-                border: `1px solid ${fieldBorder(Boolean(formErrors.tipo))}`,
-                borderRadius: "var(--radius-md)",
-                padding: "var(--space-sm) var(--space-md)",
-                fontSize: "var(--font-size-base)",
-                fontFamily: "inherit",
-                width: "100%",
-                outline: "none",
-                cursor: "pointer",
-              }}
-            >
-              {PRUEBAS.TIPOS.map((tipo) => (
-                <option key={tipo} value={tipo}>
-                  {PRUEBAS.TIPO_LABELS[tipo]}
-                </option>
-              ))}
-            </select>
+          {/* Tipo / Área en fila */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-md)" }}>
+            <div style={fieldStyle}>
+              <label htmlFor="tipo" style={labelStyle}>
+                {PRUEBAS.LABEL_TIPO}
+              </label>
+              <select
+                id="tipo"
+                value={form.tipo}
+                onChange={(e) => handleChange("tipo", e.target.value as TipoPrueba)}
+                style={selectStyle}
+              >
+                {PRUEBAS.TIPOS.map((t) => (
+                  <option key={t} value={t}>
+                    {PRUEBAS.TIPO_LABELS[t]}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div style={fieldStyle}>
+              <label htmlFor="area" style={labelStyle}>
+                {PRUEBAS.LABEL_AREA}
+              </label>
+              <select
+                id="area"
+                value={form.area}
+                onChange={(e) => handleChange("area", e.target.value as AreaPrueba)}
+                style={selectStyle}
+              >
+                {PRUEBAS.AREAS.map((a) => (
+                  <option key={a} value={a}>
+                    {PRUEBAS.AREA_LABELS[a]}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Nivel / Estado en fila */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-md)" }}>
+            <div style={fieldStyle}>
+              <label htmlFor="nivel" style={labelStyle}>
+                {PRUEBAS.LABEL_NIVEL}
+              </label>
+              <select
+                id="nivel"
+                value={form.nivel}
+                onChange={(e) => handleChange("nivel", e.target.value as NivelPrueba)}
+                style={selectStyle}
+              >
+                {PRUEBAS.NIVELES.map((n) => (
+                  <option key={n} value={n}>
+                    {PRUEBAS.NIVEL_LABELS[n]}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div style={fieldStyle}>
+              <label htmlFor="estado" style={labelStyle}>
+                {PRUEBAS.LABEL_ESTADO}
+              </label>
+              <select
+                id="estado"
+                value={form.estado}
+                onChange={(e) => handleChange("estado", e.target.value as EstadoPrueba)}
+                style={selectStyle}
+              >
+                {PRUEBAS.ESTADOS.map((s) => (
+                  <option key={s} value={s}>
+                    {PRUEBAS.ESTADO_LABELS[s]}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Descripción */}
@@ -224,12 +296,12 @@ export default function PruebaModal({ onClose, prueba }: PruebaModalProps) {
             <textarea
               id="descripcion"
               value={form.descripcion}
-              rows={2}
+              rows={3}
               onChange={(e) => handleChange("descripcion", e.target.value)}
               style={{
                 backgroundColor: "var(--color-surface)",
                 color: "var(--color-text)",
-                border: `1px solid ${fieldBorder(Boolean(formErrors.descripcion))}`,
+                border: `1px solid ${formErrors.descripcion ? "var(--color-danger)" : "var(--color-border)"}`,
                 borderRadius: "var(--radius-md)",
                 padding: "var(--space-sm) var(--space-md)",
                 fontSize: "var(--font-size-base)",
@@ -246,59 +318,28 @@ export default function PruebaModal({ onClose, prueba }: PruebaModalProps) {
             )}
           </div>
 
-          {/* Contenido */}
-          <div style={fieldStyle}>
-            <label htmlFor="contenido" style={labelStyle}>
-              {PRUEBAS.LABEL_CONTENIDO}
-            </label>
-            <textarea
-              id="contenido"
-              value={form.contenido}
-              rows={6}
-              onChange={(e) => handleChange("contenido", e.target.value)}
-              style={{
-                backgroundColor: "var(--color-surface)",
-                color: "var(--color-text)",
-                border: `1px solid ${fieldBorder(Boolean(formErrors.contenido))}`,
-                borderRadius: "var(--radius-md)",
-                padding: "var(--space-sm) var(--space-md)",
-                fontSize: "var(--font-size-base)",
-                fontFamily: "inherit",
-                resize: "vertical",
-                outline: "none",
-                width: "100%",
-              }}
-            />
-            {formErrors.contenido && (
-              <span style={{ fontSize: "var(--font-size-sm)", color: "var(--color-danger)" }}>
-                {formErrors.contenido}
-              </span>
-            )}
-          </div>
-
-          {/* Puntaje y Duración en fila */}
+          {/* Puntaje y Duración */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-md)" }}>
             <Input
               label={PRUEBAS.LABEL_PUNTAJE}
-              name="puntajeMaximo"
+              name="puntaje_maximo"
               type="number"
-              value={form.puntajeMaximo}
-              error={formErrors.puntajeMaximo}
-              variant={formErrors.puntajeMaximo ? "error" : "default"}
-              onChange={(e) => handleChange("puntajeMaximo", e.target.value)}
+              value={form.puntaje_maximo}
+              error={formErrors.puntaje_maximo}
+              variant={formErrors.puntaje_maximo ? "error" : "default"}
+              onChange={(e) => handleChange("puntaje_maximo", e.target.value)}
             />
             <Input
               label={PRUEBAS.LABEL_DURACION}
-              name="duracionMinutos"
+              name="duracion_minutos"
               type="number"
-              value={form.duracionMinutos}
-              error={formErrors.duracionMinutos}
-              variant={formErrors.duracionMinutos ? "error" : "default"}
-              onChange={(e) => handleChange("duracionMinutos", e.target.value)}
+              value={form.duracion_minutos}
+              error={formErrors.duracion_minutos}
+              variant={formErrors.duracion_minutos ? "error" : "default"}
+              onChange={(e) => handleChange("duracion_minutos", e.target.value)}
             />
           </div>
 
-          {/* Botones */}
           <div
             style={{
               display: "flex",
@@ -310,12 +351,13 @@ export default function PruebaModal({ onClose, prueba }: PruebaModalProps) {
             <Button variant="secondary" type="button" onClick={onClose} disabled={isPending}>
               {PRUEBAS.BTN_CANCELAR}
             </Button>
-            <Button variant="primary" type="submit" loading={isPending}>
+            <Button variant="primary" type="submit" loading={isPending} disabled={!currentUser}>
               {isEdit ? PRUEBAS.BTN_GUARDAR : PRUEBAS.BTN_CREAR}
             </Button>
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

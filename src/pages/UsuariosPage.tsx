@@ -28,8 +28,10 @@ export default function UsuariosPage() {
     setSelectedUsuario(undefined);
   };
 
+  const displayName = user?.username;
+
   return (
-    <MainLayout userName={user?.name} onLogout={logout}>
+    <MainLayout userName={displayName} onLogout={logout}>
       <div
         style={{
           display: "flex",

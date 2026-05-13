@@ -1,8 +1,15 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { Button, Input } from "@/shared/components/ui";
 import { ENTREVISTAS } from "@/config/constants";
+import { useCurrentUser } from "@/features/auth";
 import { useCreateEntrevista, useUpdateEntrevista } from "../hooks/useEntrevistas";
-import type { AreaEntrevista, CreateEntrevistaDto, Entrevista, UpdateEntrevistaDto } from "../types";
+import type {
+  CreateEntrevistaDto,
+  Entrevista,
+  EstadoEntrevista,
+  UpdateEntrevistaDto,
+} from "../types";
 
 type EntrevistaModalProps = {
   onClose: () => void;
@@ -11,8 +18,9 @@ type EntrevistaModalProps = {
 
 type FormState = {
   titulo: string;
-  area: AreaEntrevista;
   descripcion: string;
+  estado: EstadoEntrevista;
+  fecha_programada: string;
 };
 
 type FormErrors = Partial<Record<keyof FormState, string>>;
@@ -36,19 +44,30 @@ const labelStyle: React.CSSProperties = {
   color: "var(--color-text-muted)",
 };
 
-function fieldBorder(hasError: boolean) {
-  return hasError ? "var(--color-danger)" : "var(--color-border)";
-}
+const selectStyle: React.CSSProperties = {
+  backgroundColor: "var(--color-surface)",
+  color: "var(--color-text)",
+  border: "1px solid var(--color-border)",
+  borderRadius: "var(--radius-md)",
+  padding: "var(--space-sm) var(--space-md)",
+  fontSize: "var(--font-size-base)",
+  fontFamily: "inherit",
+  width: "100%",
+  outline: "none",
+  cursor: "pointer",
+};
 
 export default function EntrevistaModal({ onClose, entrevista }: EntrevistaModalProps) {
   const isEdit = Boolean(entrevista);
+  const { data: currentUser } = useCurrentUser();
   const createEntrevista = useCreateEntrevista();
   const updateEntrevista = useUpdateEntrevista();
 
   const [form, setForm] = useState<FormState>({
     titulo: entrevista?.titulo ?? "",
-    area: entrevista?.area ?? "juridico",
     descripcion: entrevista?.descripcion ?? "",
+    estado: entrevista?.estado ?? "borrador",
+    fecha_programada: entrevista?.fecha_programada ?? "",
   });
   const [formErrors, setFormErrors] = useState<FormErrors>({});
 
@@ -59,7 +78,7 @@ export default function EntrevistaModal({ onClose, entrevista }: EntrevistaModal
     setFormErrors((prev) => ({ ...prev, [field]: undefined }));
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const errors = validateForm(form);
     if (Object.keys(errors).length > 0) {
@@ -69,20 +88,21 @@ export default function EntrevistaModal({ onClose, entrevista }: EntrevistaModal
 
     const base = {
       titulo: form.titulo,
-      area: form.area,
       descripcion: form.descripcion,
+      estado: form.estado,
+      fecha_programada: form.fecha_programada || null,
     };
 
     if (isEdit && entrevista) {
       const dto: UpdateEntrevistaDto = base;
       updateEntrevista.mutate({ id: entrevista.id, dto }, { onSuccess: onClose });
     } else {
-      const dto: CreateEntrevistaDto = base;
+      const dto: CreateEntrevistaDto = { ...base, creada_por: currentUser!.id };
       createEntrevista.mutate(dto, { onSuccess: onClose });
     }
   };
 
-  return (
+  return createPortal(
     <div
       style={{
         position: "fixed",
@@ -113,7 +133,6 @@ export default function EntrevistaModal({ onClose, entrevista }: EntrevistaModal
           boxShadow: "var(--shadow-lg)",
         }}
       >
-        {/* Encabezado */}
         <div
           style={{
             display: "flex",
@@ -161,34 +180,41 @@ export default function EntrevistaModal({ onClose, entrevista }: EntrevistaModal
             onChange={(e) => handleChange("titulo", e.target.value)}
           />
 
-          {/* Selector de área */}
+          {/* Estado */}
           <div style={fieldStyle}>
-            <label htmlFor="area" style={labelStyle}>
-              {ENTREVISTAS.LABEL_AREA}
+            <label htmlFor="estado" style={labelStyle}>
+              {ENTREVISTAS.LABEL_ESTADO}
             </label>
             <select
-              id="area"
-              value={form.area}
-              onChange={(e) => handleChange("area", e.target.value as AreaEntrevista)}
-              style={{
-                backgroundColor: "var(--color-surface)",
-                color: "var(--color-text)",
-                border: `1px solid ${fieldBorder(Boolean(formErrors.area))}`,
-                borderRadius: "var(--radius-md)",
-                padding: "var(--space-sm) var(--space-md)",
-                fontSize: "var(--font-size-base)",
-                fontFamily: "inherit",
-                width: "100%",
-                outline: "none",
-                cursor: "pointer",
-              }}
+              id="estado"
+              value={form.estado}
+              onChange={(e) => handleChange("estado", e.target.value as EstadoEntrevista)}
+              style={selectStyle}
             >
-              {ENTREVISTAS.AREAS.map((area) => (
-                <option key={area} value={area}>
-                  {ENTREVISTAS.AREA_LABELS[area]}
+              {ENTREVISTAS.ESTADOS.map((s) => (
+                <option key={s} value={s}>
+                  {ENTREVISTAS.ESTADO_LABELS[s]}
                 </option>
               ))}
             </select>
+          </div>
+
+          {/* Fecha programada */}
+          <div style={fieldStyle}>
+            <label htmlFor="fecha_programada" style={labelStyle}>
+              {ENTREVISTAS.LABEL_FECHA_PROGRAMADA}
+            </label>
+            <input
+              id="fecha_programada"
+              type="datetime-local"
+              value={form.fecha_programada}
+              onChange={(e) => handleChange("fecha_programada", e.target.value)}
+              style={{
+                ...selectStyle,
+                cursor: "default",
+                colorScheme: "dark",
+              }}
+            />
           </div>
 
           {/* Descripción */}
@@ -204,7 +230,7 @@ export default function EntrevistaModal({ onClose, entrevista }: EntrevistaModal
               style={{
                 backgroundColor: "var(--color-surface)",
                 color: "var(--color-text)",
-                border: `1px solid ${fieldBorder(Boolean(formErrors.descripcion))}`,
+                border: `1px solid ${formErrors.descripcion ? "var(--color-danger)" : "var(--color-border)"}`,
                 borderRadius: "var(--radius-md)",
                 padding: "var(--space-sm) var(--space-md)",
                 fontSize: "var(--font-size-base)",
@@ -221,7 +247,6 @@ export default function EntrevistaModal({ onClose, entrevista }: EntrevistaModal
             )}
           </div>
 
-          {/* Botones */}
           <div
             style={{
               display: "flex",
@@ -233,12 +258,13 @@ export default function EntrevistaModal({ onClose, entrevista }: EntrevistaModal
             <Button variant="secondary" type="button" onClick={onClose} disabled={isPending}>
               {ENTREVISTAS.BTN_CANCELAR}
             </Button>
-            <Button variant="primary" type="submit" loading={isPending}>
+            <Button variant="primary" type="submit" loading={isPending} disabled={!currentUser}>
               {isEdit ? ENTREVISTAS.BTN_GUARDAR : ENTREVISTAS.BTN_CREAR}
             </Button>
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -1,23 +1,25 @@
 import { api } from "@/shared/lib/axios";
-import type { ApiResponse } from "@/shared/types/api";
+import type { PaginatedResponse } from "@/shared/types/api";
 import type { Usuario, CreateUsuarioDto, UpdateUsuarioDto } from "../types";
 
 export const usuariosService = {
-  getUsuarios: (): Promise<Usuario[]> =>
-    api.get<ApiResponse<Usuario[]>>("/usuarios").then((r) => r.data.data),
+  getUsuarios: (page = 1): Promise<Usuario[]> =>
+    api
+      .get<PaginatedResponse<Usuario>>("/usuarios/usuarios/", { params: { page } })
+      .then((r) => r.data.results),
 
-  getUsuarioById: (id: string): Promise<Usuario> =>
-    api.get<ApiResponse<Usuario>>(`/usuarios/${id}`).then((r) => r.data.data),
+  getUsuarioById: (id: number): Promise<Usuario> =>
+    api.get<Usuario>(`/usuarios/usuarios/${id}/`).then((r) => r.data),
 
   createUsuario: (dto: CreateUsuarioDto): Promise<Usuario> =>
-    api.post<ApiResponse<Usuario>>("/usuarios", dto).then((r) => r.data.data),
+    api.post<Usuario>("/usuarios/usuarios/", dto).then((r) => r.data),
 
-  updateUsuario: (id: string, dto: UpdateUsuarioDto): Promise<Usuario> =>
-    api.put<ApiResponse<Usuario>>(`/usuarios/${id}`, dto).then((r) => r.data.data),
+  updateUsuario: (id: number, dto: UpdateUsuarioDto): Promise<Usuario> =>
+    api.put<Usuario>(`/usuarios/usuarios/${id}/`, dto).then((r) => r.data),
 
-  deleteUsuario: (id: string): Promise<void> =>
-    api.delete(`/usuarios/${id}`).then(() => undefined),
+  patchUsuario: (id: number, dto: UpdateUsuarioDto): Promise<Usuario> =>
+    api.patch<Usuario>(`/usuarios/usuarios/${id}/`, dto).then((r) => r.data),
 
-  toggleActivo: (id: string): Promise<Usuario> =>
-    api.patch<ApiResponse<Usuario>>(`/usuarios/${id}/toggle-activo`).then((r) => r.data.data),
+  deleteUsuario: (id: number): Promise<void> =>
+    api.delete(`/usuarios/usuarios/${id}/`).then(() => undefined),
 };

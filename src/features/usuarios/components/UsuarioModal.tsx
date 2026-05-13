@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { Button, Input } from "@/shared/components/ui";
 import { USUARIOS } from "@/config/constants";
 import { useCreateUsuario, useUpdateUsuario } from "../hooks/useUsuarios";
-import type { CreateUsuarioDto, Rol, UpdateUsuarioDto, Usuario } from "../types";
+import type { CreateUsuarioDto, EstadoUsuario, Rol, UpdateUsuarioDto, Usuario } from "../types";
 
 type UsuarioModalProps = {
   onClose: () => void;
@@ -13,8 +14,10 @@ type FormState = {
   nombre: string;
   apellido: string;
   email: string;
+  telefono: string;
   password: string;
   rol: Rol;
+  estado: EstadoUsuario;
 };
 
 type FormErrors = Partial<Record<keyof FormState, string>>;
@@ -57,8 +60,10 @@ export default function UsuarioModal({ onClose, usuario }: UsuarioModalProps) {
     nombre: usuario?.nombre ?? "",
     apellido: usuario?.apellido ?? "",
     email: usuario?.email ?? "",
+    telefono: usuario?.telefono ?? "",
     password: "",
     rol: usuario?.rol ?? "evaluador",
+    estado: usuario?.estado ?? "activo",
   });
   const [formErrors, setFormErrors] = useState<FormErrors>({});
 
@@ -69,7 +74,7 @@ export default function UsuarioModal({ onClose, usuario }: UsuarioModalProps) {
     setFormErrors((prev) => ({ ...prev, [field]: undefined }));
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const errors = validateForm(form, isEdit);
     if (Object.keys(errors).length > 0) {
@@ -82,16 +87,19 @@ export default function UsuarioModal({ onClose, usuario }: UsuarioModalProps) {
         nombre: form.nombre,
         apellido: form.apellido,
         email: form.email,
+        telefono: form.telefono,
         rol: form.rol,
+        estado: form.estado,
       };
       updateUsuario.mutate({ id: usuario.id, dto }, { onSuccess: onClose });
     } else {
-      const dto: CreateUsuarioDto = { ...form };
+      const { estado: _estado, ...createFields } = form;
+      const dto: CreateUsuarioDto = createFields;
       createUsuario.mutate(dto, { onSuccess: onClose });
     }
   };
 
-  return (
+  return createPortal(
     <div
       style={{
         position: "fixed",
@@ -103,17 +111,11 @@ export default function UsuarioModal({ onClose, usuario }: UsuarioModalProps) {
         padding: "var(--space-xl)",
       }}
     >
-      {/* Backdrop */}
       <div
-        style={{
-          position: "fixed",
-          inset: 0,
-          backgroundColor: "rgba(0, 0, 0, 0.6)",
-        }}
+        style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0, 0, 0, 0.6)" }}
         onClick={onClose}
       />
 
-      {/* Contenido del modal */}
       <div
         style={{
           position: "relative",
@@ -167,22 +169,25 @@ export default function UsuarioModal({ onClose, usuario }: UsuarioModalProps) {
           onSubmit={handleSubmit}
           style={{ display: "flex", flexDirection: "column", gap: "var(--space-md)" }}
         >
-          <Input
-            label={USUARIOS.LABEL_NOMBRE}
-            name="nombre"
-            value={form.nombre}
-            error={formErrors.nombre}
-            variant={formErrors.nombre ? "error" : "default"}
-            onChange={(e) => handleChange("nombre", e.target.value)}
-          />
-          <Input
-            label={USUARIOS.LABEL_APELLIDO}
-            name="apellido"
-            value={form.apellido}
-            error={formErrors.apellido}
-            variant={formErrors.apellido ? "error" : "default"}
-            onChange={(e) => handleChange("apellido", e.target.value)}
-          />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-md)" }}>
+            <Input
+              label={USUARIOS.LABEL_NOMBRE}
+              name="nombre"
+              value={form.nombre}
+              error={formErrors.nombre}
+              variant={formErrors.nombre ? "error" : "default"}
+              onChange={(e) => handleChange("nombre", e.target.value)}
+            />
+            <Input
+              label={USUARIOS.LABEL_APELLIDO}
+              name="apellido"
+              value={form.apellido}
+              error={formErrors.apellido}
+              variant={formErrors.apellido ? "error" : "default"}
+              onChange={(e) => handleChange("apellido", e.target.value)}
+            />
+          </div>
+
           <Input
             label={USUARIOS.LABEL_EMAIL}
             name="email"
@@ -193,6 +198,17 @@ export default function UsuarioModal({ onClose, usuario }: UsuarioModalProps) {
             autoComplete="off"
             onChange={(e) => handleChange("email", e.target.value)}
           />
+
+          <Input
+            label={USUARIOS.LABEL_TELEFONO}
+            name="telefono"
+            type="tel"
+            value={form.telefono}
+            error={formErrors.telefono}
+            variant={formErrors.telefono ? "error" : "default"}
+            onChange={(e) => handleChange("telefono", e.target.value)}
+          />
+
           {!isEdit && (
             <Input
               label={USUARIOS.LABEL_PASSWORD}
@@ -206,7 +222,6 @@ export default function UsuarioModal({ onClose, usuario }: UsuarioModalProps) {
             />
           )}
 
-          {/* Selector de rol */}
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-xs)" }}>
             <label
               htmlFor="rol"
@@ -227,8 +242,11 @@ export default function UsuarioModal({ onClose, usuario }: UsuarioModalProps) {
                 borderColor: formErrors.rol ? "var(--color-danger)" : "var(--color-border)",
               }}
             >
-              <option value="evaluador">{USUARIOS.ROL_LABELS.evaluador}</option>
-              <option value="administrador">{USUARIOS.ROL_LABELS.administrador}</option>
+              {USUARIOS.ROLES.map((rol) => (
+                <option key={rol} value={rol}>
+                  {USUARIOS.ROL_LABELS[rol as Rol]}
+                </option>
+              ))}
             </select>
             {formErrors.rol && (
               <span style={{ fontSize: "var(--font-size-sm)", color: "var(--color-danger)" }}>
@@ -236,6 +254,33 @@ export default function UsuarioModal({ onClose, usuario }: UsuarioModalProps) {
               </span>
             )}
           </div>
+
+          {isEdit && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-xs)" }}>
+              <label
+                htmlFor="estado"
+                style={{
+                  fontSize: "var(--font-size-sm)",
+                  fontWeight: "var(--font-weight-medium)",
+                  color: "var(--color-text-muted)",
+                }}
+              >
+                {USUARIOS.LABEL_ESTADO}
+              </label>
+              <select
+                id="estado"
+                value={form.estado}
+                onChange={(e) => handleChange("estado", e.target.value as EstadoUsuario)}
+                style={selectStyle}
+              >
+                {USUARIOS.ESTADOS.map((estado) => (
+                  <option key={estado} value={estado}>
+                    {USUARIOS.ESTADO_LABELS[estado as EstadoUsuario]}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div
             style={{
@@ -254,6 +299,8 @@ export default function UsuarioModal({ onClose, usuario }: UsuarioModalProps) {
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
+

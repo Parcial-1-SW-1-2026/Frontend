@@ -1,44 +1,47 @@
-export type AreaEntrevista = "juridico" | "comercial" | "desarrollador";
+export type EstadoEntrevista =
+  | "borrador"
+  | "programada"
+  | "en_proceso"
+  | "finalizada"
+  | "cancelada";
+
+export type EstadoAsignacion = "asignada" | "inactiva" | "cancelada";
 
 export type Entrevista = {
-  id: string;
-  usuarioId: string;
+  id: number;
   titulo: string;
-  area: AreaEntrevista;
   descripcion: string;
-  totalPruebas: number;
-  activa: boolean;
-  creadaEn: string;
+  creada_por: number;
+  estado: EstadoEntrevista;
+  fecha_programada: string | null;
+  fecha_creacion: string;
+  fecha_actualizacion: string;
 };
 
-export type EntrevistaPrueba = {
-  id: string;
-  entrevistaId: string;
-  pruebaId: string;
-  orden: number;
-  obligatoria: boolean;
-  pesoPorcentaje: number;
-};
-
-export type EntrevistaConPruebas = Entrevista & {
-  pruebas: EntrevistaPrueba[];
+export type PruebaEntrevista = {
+  id: number;
+  entrevista: number;
+  prueba: number;
+  asignada_por: number;
+  estado: EstadoAsignacion;
+  observaciones: string;
+  fecha_asignacion: string;
+  fecha_actualizacion: string;
 };
 
 export type CreateEntrevistaDto = {
   titulo: string;
-  area: AreaEntrevista;
   descripcion: string;
+  creada_por: number;
+  estado?: EstadoEntrevista;
+  fecha_programada?: string | null;
 };
 
-export type UpdateEntrevistaDto = Partial<CreateEntrevistaDto>;
+export type UpdateEntrevistaDto = Partial<Omit<CreateEntrevistaDto, "creada_por">>;
 
 export type AsignarPruebaDto = {
-  pruebaId: string;
-  orden: number;
-  obligatoria: boolean;
-  pesoPorcentaje: number;
-};
-
-export type ReordenarPruebasDto = {
-  pruebas: Array<{ id: string; orden: number }>;
+  entrevista: number;
+  prueba: number;
+  asignada_por: number;
+  observaciones?: string;
 };

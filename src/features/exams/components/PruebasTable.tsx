@@ -1,7 +1,7 @@
 import { Badge, Button, Spinner } from "@/shared/components/ui";
 import { PRUEBAS } from "@/config/constants";
-import { useGetPruebas, useDeletePrueba, useToggleActiva } from "../hooks/useExams";
-import type { Prueba, TipoPrueba } from "../types";
+import { useGetPruebas, useDeletePrueba } from "../hooks/useExams";
+import type { AreaPrueba, EstadoPrueba, Prueba, TipoPrueba } from "../types";
 
 type PruebasTableProps = {
   tipoFilter: TipoPrueba | null;
@@ -32,7 +32,6 @@ const tdStyle: React.CSSProperties = {
 export default function PruebasTable({ tipoFilter, onView, onEdit }: PruebasTableProps) {
   const { data: pruebas, isLoading, isError } = useGetPruebas();
   const deletePrueba = useDeletePrueba();
-  const toggleActiva = useToggleActiva();
 
   if (isLoading) {
     return (
@@ -82,7 +81,7 @@ export default function PruebasTable({ tipoFilter, onView, onEdit }: PruebasTabl
     }
   };
 
-  const isMutating = deletePrueba.isPending || toggleActiva.isPending;
+  const isMutating = deletePrueba.isPending;
 
   return (
     <div style={{ overflowX: "auto" }}>
@@ -91,6 +90,8 @@ export default function PruebasTable({ tipoFilter, onView, onEdit }: PruebasTabl
           <tr>
             <th style={thStyle}>{PRUEBAS.COL_TITULO}</th>
             <th style={thStyle}>{PRUEBAS.COL_TIPO}</th>
+            <th style={thStyle}>{PRUEBAS.COL_AREA}</th>
+            <th style={thStyle}>{PRUEBAS.COL_NIVEL}</th>
             <th style={{ ...thStyle, textAlign: "right" }}>{PRUEBAS.COL_DURACION}</th>
             <th style={{ ...thStyle, textAlign: "right" }}>{PRUEBAS.COL_PUNTAJE}</th>
             <th style={thStyle}>{PRUEBAS.COL_ESTADO}</th>
@@ -100,7 +101,13 @@ export default function PruebasTable({ tipoFilter, onView, onEdit }: PruebasTabl
         <tbody>
           {filtered.map((prueba) => (
             <tr key={prueba.id}>
-              <td style={{ ...tdStyle, fontWeight: "var(--font-weight-medium)", maxWidth: "220px" }}>
+              <td
+                style={{
+                  ...tdStyle,
+                  fontWeight: "var(--font-weight-medium)",
+                  maxWidth: "200px",
+                }}
+              >
                 <span
                   style={{
                     display: "block",
@@ -114,19 +121,31 @@ export default function PruebasTable({ tipoFilter, onView, onEdit }: PruebasTabl
                 </span>
               </td>
               <td style={tdStyle}>
-                <Badge variant={PRUEBAS.TIPO_BADGE[prueba.tipo] as BadgeVariant}>
-                  {PRUEBAS.TIPO_LABELS[prueba.tipo]}
+                <Badge variant={PRUEBAS.TIPO_BADGE[prueba.tipo as TipoPrueba] as BadgeVariant}>
+                  {PRUEBAS.TIPO_LABELS[prueba.tipo as TipoPrueba]}
                 </Badge>
               </td>
-              <td style={{ ...tdStyle, textAlign: "right", color: "var(--color-text-muted)" }}>
-                {prueba.duracionMinutos} {PRUEBAS.DETAIL_MINUTOS}
-              </td>
-              <td style={{ ...tdStyle, textAlign: "right", color: "var(--color-text-muted)" }}>
-                {prueba.puntajeMaximo} {PRUEBAS.DETAIL_PUNTOS}
+              <td style={tdStyle}>
+                <Badge variant={PRUEBAS.AREA_BADGE[prueba.area as AreaPrueba] as BadgeVariant}>
+                  {PRUEBAS.AREA_LABELS[prueba.area as AreaPrueba]}
+                </Badge>
               </td>
               <td style={tdStyle}>
-                <Badge variant={prueba.activa ? "success" : "danger"}>
-                  {prueba.activa ? PRUEBAS.ACTIVA : PRUEBAS.INACTIVA}
+                <span style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-muted)" }}>
+                  {PRUEBAS.NIVEL_LABELS[prueba.nivel]}
+                </span>
+              </td>
+              <td style={{ ...tdStyle, textAlign: "right", color: "var(--color-text-muted)" }}>
+                {prueba.duracion_minutos} {PRUEBAS.DETAIL_MINUTOS}
+              </td>
+              <td style={{ ...tdStyle, textAlign: "right", color: "var(--color-text-muted)" }}>
+                {prueba.puntaje_maximo} {PRUEBAS.DETAIL_PUNTOS}
+              </td>
+              <td style={tdStyle}>
+                <Badge
+                  variant={PRUEBAS.ESTADO_BADGE[prueba.estado as EstadoPrueba] as BadgeVariant}
+                >
+                  {PRUEBAS.ESTADO_LABELS[prueba.estado as EstadoPrueba]}
                 </Badge>
               </td>
               <td style={{ ...tdStyle, textAlign: "right" }}>
@@ -152,14 +171,6 @@ export default function PruebasTable({ tipoFilter, onView, onEdit }: PruebasTabl
                     onClick={() => onEdit(prueba)}
                   >
                     {PRUEBAS.BTN_EDITAR}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    disabled={isMutating}
-                    onClick={() => toggleActiva.mutate(prueba.id)}
-                  >
-                    {prueba.activa ? PRUEBAS.BTN_DESACTIVAR : PRUEBAS.BTN_ACTIVAR}
                   </Button>
                   <Button
                     variant="danger"

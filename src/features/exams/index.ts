@@ -1,4 +1,12 @@
-export type { Exam, ExamStatus, Prueba, TipoPrueba, CreatePruebaDto, UpdatePruebaDto } from "./types";
+export type {
+  Prueba,
+  TipoPrueba,
+  AreaPrueba,
+  NivelPrueba,
+  EstadoPrueba,
+  CreatePruebaDto,
+  UpdatePruebaDto,
+} from "./types";
 export { examsService } from "./services/examsService";
 export {
   useGetPruebas,
@@ -6,7 +14,6 @@ export {
   useCreatePrueba,
   useUpdatePrueba,
   useDeletePrueba,
-  useToggleActiva,
 } from "./hooks/useExams";
 export { default as PruebasTable } from "./components/PruebasTable";
 export { default as PruebaModal } from "./components/PruebaModal";

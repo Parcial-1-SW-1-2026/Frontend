@@ -1,10 +1,10 @@
 import { Badge, Button, Spinner } from "@/shared/components/ui";
 import { ENTREVISTAS } from "@/config/constants";
 import { useGetEntrevistas, useDeleteEntrevista } from "../hooks/useEntrevistas";
-import type { AreaEntrevista, Entrevista } from "../types";
+import type { Entrevista, EstadoEntrevista } from "../types";
 
 type EntrevistasTableProps = {
-  areaFilter: AreaEntrevista | null;
+  estadoFilter: EstadoEntrevista | null;
   onView: (entrevista: Entrevista) => void;
   onEdit: (entrevista: Entrevista) => void;
 };
@@ -29,7 +29,16 @@ const tdStyle: React.CSSProperties = {
   verticalAlign: "middle",
 };
 
-export default function EntrevistasTable({ areaFilter, onView, onEdit }: EntrevistasTableProps) {
+function formatDate(iso: string | null): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("es-PE", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+export default function EntrevistasTable({ estadoFilter, onView, onEdit }: EntrevistasTableProps) {
   const { data: entrevistas, isLoading, isError } = useGetEntrevistas();
   const deleteEntrevista = useDeleteEntrevista();
 
@@ -56,8 +65,8 @@ export default function EntrevistasTable({ areaFilter, onView, onEdit }: Entrevi
     );
   }
 
-  const filtered = areaFilter
-    ? (entrevistas ?? []).filter((e) => e.area === areaFilter)
+  const filtered = estadoFilter
+    ? (entrevistas ?? []).filter((e) => e.estado === estadoFilter)
     : (entrevistas ?? []);
 
   if (filtered.length === 0) {
@@ -89,9 +98,9 @@ export default function EntrevistasTable({ areaFilter, onView, onEdit }: Entrevi
         <thead style={{ backgroundColor: "var(--color-surface-hover)" }}>
           <tr>
             <th style={thStyle}>{ENTREVISTAS.COL_TITULO}</th>
-            <th style={thStyle}>{ENTREVISTAS.COL_AREA}</th>
-            <th style={{ ...thStyle, textAlign: "right" }}>{ENTREVISTAS.COL_TOTAL_PRUEBAS}</th>
+            <th style={{ ...thStyle, maxWidth: "240px" }}>{ENTREVISTAS.COL_DESCRIPCION}</th>
             <th style={thStyle}>{ENTREVISTAS.COL_ESTADO}</th>
+            <th style={thStyle}>{ENTREVISTAS.COL_FECHA}</th>
             <th style={{ ...thStyle, textAlign: "right" }}>{ENTREVISTAS.COL_ACCIONES}</th>
           </tr>
         </thead>
@@ -102,7 +111,7 @@ export default function EntrevistasTable({ areaFilter, onView, onEdit }: Entrevi
                 style={{
                   ...tdStyle,
                   fontWeight: "var(--font-weight-medium)",
-                  maxWidth: "260px",
+                  maxWidth: "220px",
                 }}
               >
                 <span
@@ -117,18 +126,30 @@ export default function EntrevistasTable({ areaFilter, onView, onEdit }: Entrevi
                   {entrevista.titulo}
                 </span>
               </td>
+              <td style={{ ...tdStyle, maxWidth: "240px", color: "var(--color-text-muted)" }}>
+                <span
+                  style={{
+                    display: "block",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                  title={entrevista.descripcion}
+                >
+                  {entrevista.descripcion}
+                </span>
+              </td>
               <td style={tdStyle}>
-                <Badge variant={ENTREVISTAS.AREA_BADGE[entrevista.area] as BadgeVariant}>
-                  {ENTREVISTAS.AREA_LABELS[entrevista.area]}
+                <Badge
+                  variant={
+                    ENTREVISTAS.ESTADO_BADGE[entrevista.estado as EstadoEntrevista] as BadgeVariant
+                  }
+                >
+                  {ENTREVISTAS.ESTADO_LABELS[entrevista.estado as EstadoEntrevista]}
                 </Badge>
               </td>
-              <td style={{ ...tdStyle, textAlign: "right", color: "var(--color-text-muted)" }}>
-                {entrevista.totalPruebas}
-              </td>
-              <td style={tdStyle}>
-                <Badge variant={entrevista.activa ? "success" : "danger"}>
-                  {entrevista.activa ? ENTREVISTAS.ACTIVA : ENTREVISTAS.INACTIVA}
-                </Badge>
+              <td style={{ ...tdStyle, color: "var(--color-text-muted)" }}>
+                {formatDate(entrevista.fecha_programada)}
               </td>
               <td style={{ ...tdStyle, textAlign: "right" }}>
                 <div

@@ -1,9 +1,10 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { Badge, Button, Spinner } from "@/shared/components/ui";
 import { ENTREVISTAS, PRUEBAS } from "@/config/constants";
 import { useGetPruebas } from "@/features/exams";
-import { useGetEntrevistaById, useRemoverPrueba } from "../hooks/useEntrevistas";
-import type { Entrevista, EntrevistaPrueba } from "../types";
+import { useGetPruebasEntrevista, useRemoverAsignacion } from "../hooks/useEntrevistas";
+import type { Entrevista, EstadoAsignacion, EstadoEntrevista, PruebaEntrevista } from "../types";
 import AsignarPruebaModal from "./AsignarPruebaModal";
 
 type EntrevistaDetailDrawerProps = {
@@ -25,11 +26,14 @@ const metaValueStyle: React.CSSProperties = {
   fontWeight: "var(--font-weight-medium)",
 };
 
-function formatDate(iso: string): string {
+function formatDate(iso: string | null): string {
+  if (!iso) return "—";
   return new Date(iso).toLocaleDateString("es-PE", {
     year: "numeric",
     month: "long",
     day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
@@ -37,22 +41,22 @@ export default function EntrevistaDetailDrawer({
   entrevista,
   onClose,
 }: EntrevistaDetailDrawerProps) {
-  const { data: detail, isLoading } = useGetEntrevistaById(entrevista.id);
+  const { data: asignaciones, isLoading } = useGetPruebasEntrevista(entrevista.id);
   const { data: pruebas } = useGetPruebas();
-  const removerPrueba = useRemoverPrueba();
+  const removerAsignacion = useRemoverAsignacion();
   const [isAsignarOpen, setIsAsignarOpen] = useState(false);
 
   const pruebaMap = new Map((pruebas ?? []).map((p) => [p.id, p]));
-  const sortedEPs = [...(detail?.pruebas ?? [])].sort((a, b) => a.orden - b.orden);
-  const totalPeso = sortedEPs.reduce((sum, ep) => sum + ep.pesoPorcentaje, 0);
+  const asignacionesList = asignaciones ?? [];
+  const assignedPruebaIds = asignacionesList.map((a) => a.prueba);
 
-  const handleRemover = (ep: EntrevistaPrueba) => {
+  const handleRemover = (asignacion: PruebaEntrevista) => {
     if (window.confirm(ENTREVISTAS.CONFIRM_REMOVER_PRUEBA)) {
-      removerPrueba.mutate({ entrevistaId: entrevista.id, pruebaId: ep.pruebaId });
+      removerAsignacion.mutate({ id: asignacion.id, entrevistaId: entrevista.id });
     }
   };
 
-  return (
+  return createPortal(
     <div
       style={{
         position: "fixed",
@@ -125,13 +129,14 @@ export default function EntrevistaDetailDrawer({
           </button>
         </div>
 
-        {/* Badges: área y estado */}
-        <div style={{ display: "flex", gap: "var(--space-sm)", flexWrap: "wrap" }}>
-          <Badge variant={ENTREVISTAS.AREA_BADGE[entrevista.area] as BadgeVariant}>
-            {ENTREVISTAS.AREA_LABELS[entrevista.area]}
-          </Badge>
-          <Badge variant={entrevista.activa ? "success" : "danger"}>
-            {entrevista.activa ? ENTREVISTAS.ACTIVA : ENTREVISTAS.INACTIVA}
+        {/* Badge de estado */}
+        <div>
+          <Badge
+            variant={
+              ENTREVISTAS.ESTADO_BADGE[entrevista.estado as EstadoEntrevista] as BadgeVariant
+            }
+          >
+            {ENTREVISTAS.ESTADO_LABELS[entrevista.estado as EstadoEntrevista]}
           </Badge>
         </div>
 
@@ -161,12 +166,12 @@ export default function EntrevistaDetailDrawer({
           }}
         >
           <div>
-            <p style={metaLabelStyle}>{ENTREVISTAS.COL_TOTAL_PRUEBAS}</p>
-            <p style={metaValueStyle}>{entrevista.totalPruebas}</p>
+            <p style={metaLabelStyle}>{ENTREVISTAS.COL_FECHA}</p>
+            <p style={metaValueStyle}>{formatDate(entrevista.fecha_programada)}</p>
           </div>
           <div>
             <p style={metaLabelStyle}>Creada</p>
-            <p style={metaValueStyle}>{formatDate(entrevista.creadaEn)}</p>
+            <p style={metaValueStyle}>{formatDate(entrevista.fecha_creacion)}</p>
           </div>
         </div>
 
@@ -180,30 +185,15 @@ export default function EntrevistaDetailDrawer({
               gap: "var(--space-md)",
             }}
           >
-            <div>
-              <p
-                style={{
-                  fontSize: "var(--font-size-base)",
-                  fontWeight: "var(--font-weight-bold)",
-                  color: "var(--color-text)",
-                }}
-              >
-                {ENTREVISTAS.DETAIL_PRUEBAS_TITLE}
-              </p>
-              {sortedEPs.length > 0 && (
-                <p style={{ ...metaLabelStyle, marginBottom: 0 }}>
-                  {ENTREVISTAS.DETAIL_PESO_TOTAL}:{" "}
-                  <span
-                    style={{
-                      color: totalPeso > 100 ? "var(--color-danger)" : "var(--color-text)",
-                      fontWeight: "var(--font-weight-medium)",
-                    }}
-                  >
-                    {totalPeso}%
-                  </span>
-                </p>
-              )}
-            </div>
+            <p
+              style={{
+                fontSize: "var(--font-size-base)",
+                fontWeight: "var(--font-weight-bold)",
+                color: "var(--color-text)",
+              }}
+            >
+              {ENTREVISTAS.DETAIL_PRUEBAS_TITLE}
+            </p>
             <Button variant="primary" size="sm" onClick={() => setIsAsignarOpen(true)}>
               {ENTREVISTAS.BTN_ASIGNAR_PRUEBA}
             </Button>
@@ -213,7 +203,7 @@ export default function EntrevistaDetailDrawer({
             <div style={{ display: "flex", justifyContent: "center", padding: "var(--space-lg)" }}>
               <Spinner size="md" />
             </div>
-          ) : sortedEPs.length === 0 ? (
+          ) : asignacionesList.length === 0 ? (
             <p
               style={{
                 color: "var(--color-text-muted)",
@@ -239,11 +229,11 @@ export default function EntrevistaDetailDrawer({
                 overflow: "hidden",
               }}
             >
-              {sortedEPs.map((ep) => {
-                const prueba = pruebaMap.get(ep.pruebaId);
+              {asignacionesList.map((asignacion) => {
+                const prueba = pruebaMap.get(asignacion.prueba);
                 return (
                   <div
-                    key={ep.id}
+                    key={asignacion.id}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -252,28 +242,9 @@ export default function EntrevistaDetailDrawer({
                       borderBottom: "1px solid var(--color-border)",
                     }}
                   >
-                    {/* Número de orden */}
-                    <span
-                      style={{
-                        fontSize: "var(--font-size-xs)",
-                        color: "var(--color-text-muted)",
-                        fontWeight: "var(--font-weight-medium)",
-                        minWidth: 24,
-                        textAlign: "center",
-                        backgroundColor: "var(--color-surface)",
-                        borderRadius: "var(--radius-sm)",
-                        padding: "2px 6px",
-                        flexShrink: 0,
-                      }}
-                    >
-                      #{ep.orden}
-                    </span>
-
                     {/* Tipo badge */}
                     {prueba && (
-                      <Badge
-                        variant={PRUEBAS.TIPO_BADGE[prueba.tipo] as BadgeVariant}
-                      >
+                      <Badge variant={PRUEBAS.TIPO_BADGE[prueba.tipo] as BadgeVariant}>
                         {PRUEBAS.TIPO_LABELS[prueba.tipo]}
                       </Badge>
                     )}
@@ -288,35 +259,45 @@ export default function EntrevistaDetailDrawer({
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap",
                       }}
-                      title={prueba?.titulo ?? ep.pruebaId}
+                      title={prueba?.titulo ?? String(asignacion.prueba)}
                     >
-                      {prueba?.titulo ?? ep.pruebaId}
+                      {prueba?.titulo ?? `Prueba #${asignacion.prueba}`}
                     </span>
 
-                    {/* Obligatoria */}
-                    {ep.obligatoria && (
-                      <Badge variant="neutral">{ENTREVISTAS.DETAIL_OBLIGATORIA}</Badge>
+                    {/* Estado asignación */}
+                    <Badge
+                      variant={
+                        ENTREVISTAS.ESTADO_ASIGNACION_BADGE[
+                          asignacion.estado as EstadoAsignacion
+                        ] as BadgeVariant
+                      }
+                    >
+                      {ENTREVISTAS.ESTADO_ASIGNACION_LABELS[asignacion.estado as EstadoAsignacion]}
+                    </Badge>
+
+                    {/* Observaciones */}
+                    {asignacion.observaciones && (
+                      <span
+                        style={{
+                          fontSize: "var(--font-size-xs, 0.75rem)",
+                          color: "var(--color-text-muted)",
+                          maxWidth: 120,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                        title={asignacion.observaciones}
+                      >
+                        {asignacion.observaciones}
+                      </span>
                     )}
-
-                    {/* Peso */}
-                    <span
-                      style={{
-                        fontSize: "var(--font-size-sm)",
-                        color: "var(--color-text-muted)",
-                        minWidth: 40,
-                        textAlign: "right",
-                        flexShrink: 0,
-                      }}
-                    >
-                      {ep.pesoPorcentaje}%
-                    </span>
 
                     {/* Remover */}
                     <Button
                       variant="danger"
                       size="sm"
-                      disabled={removerPrueba.isPending}
-                      onClick={() => handleRemover(ep)}
+                      disabled={removerAsignacion.isPending}
+                      onClick={() => handleRemover(asignacion)}
                     >
                       {ENTREVISTAS.BTN_REMOVER}
                     </Button>
@@ -338,12 +319,11 @@ export default function EntrevistaDetailDrawer({
       {isAsignarOpen && (
         <AsignarPruebaModal
           entrevistaId={entrevista.id}
-          assignedPruebaIds={sortedEPs.map((ep) => ep.pruebaId)}
-          pesoUsado={totalPeso}
-          nextOrden={sortedEPs.length + 1}
+          assignedPruebaIds={assignedPruebaIds}
           onClose={() => setIsAsignarOpen(false)}
         />
       )}
-    </div>
+    </div>,
+    document.body
   );
 }

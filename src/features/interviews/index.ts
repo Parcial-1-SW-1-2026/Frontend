@@ -1,22 +1,22 @@
 export type {
-  AreaEntrevista,
   Entrevista,
-  EntrevistaPrueba,
-  EntrevistaConPruebas,
+  PruebaEntrevista,
+  EstadoEntrevista,
+  EstadoAsignacion,
   CreateEntrevistaDto,
   UpdateEntrevistaDto,
   AsignarPruebaDto,
-  ReordenarPruebasDto,
 } from "./types";
 export { entrevistasService } from "./services/entrevistasService";
 export {
   useGetEntrevistas,
   useGetEntrevistaById,
+  useGetPruebasEntrevista,
   useCreateEntrevista,
   useUpdateEntrevista,
   useDeleteEntrevista,
   useAsignarPrueba,
-  useRemoverPrueba,
+  useRemoverAsignacion,
 } from "./hooks/useEntrevistas";
 export { default as EntrevistasTable } from "./components/EntrevistasTable";
 export { default as EntrevistaModal } from "./components/EntrevistaModal";
